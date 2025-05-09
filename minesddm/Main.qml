@@ -36,6 +36,28 @@ Rectangle {
     property var actionKeys: Object.keys(root.actionMap)
     property int currentActionIndex: 0
 
+    property bool sessionsInitialized: false
+
+    function getSessionName() {
+        if (!sessionsInitialized) {
+            return "Loading sessions...";
+        }
+        if (sessions.length === 0 || sessionIndex < 0 || sessionIndex >= sessions.length) {
+            return "No sessions found";
+        }
+        return sessions[sessionIndex].name;
+    }
+
+    function getSessionComment() {
+        if (!sessionsInitialized) {
+            return "Please wait while available desktop sessions are being loaded...";
+        }
+        if (sessions.length === 0 || sessionIndex < 0 || sessionIndex >= sessions.length) {
+            return "No session information available";
+        }
+        return sessions[sessionIndex].comment;
+    }
+
     function replacePlaceholders(text, placeholders) {
         let result = text;
         for (let key in placeholders) {
@@ -148,7 +170,7 @@ Rectangle {
             spacing: config.labelFieldSpacing
 
             CustomButton {
-                text: "Session: " + root.sessions[root.sessionIndex].name
+                text: "Session: " + root.getSessionName()
                 onCustomClicked: {
                     root.sessionIndex = (root.sessionIndex + 1) % sessionModel.count;
                 }
@@ -159,13 +181,12 @@ Rectangle {
 
                 SessionHandler {
                     // Please look at the SessionHandler.qml file to understand what is happening here
-
                 }
 
             }
 
             CustomText {
-                text: root.sessions[root.sessionIndex].comment
+                text: root.getSessionComment()
                 wrapMode: Text.Wrap
                 width: config.inputWidth
             }

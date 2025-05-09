@@ -18,10 +18,12 @@ ListView {
                 "name": model.name,
                 "comment": model.comment
             });
+            
             // For some reason I need to update the root.sessionIndex for the values on the root.session to update and appear where they are used
             root.sessionIndex = (root.sessionIndex + 1) % sessionModel.count;
             root.sessionIndex = sessionModel.lastIndex;
+
+            root.sessionsInitialized = true;
         }
     }
-
 }
