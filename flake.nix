@@ -13,6 +13,8 @@
         version = "1.0.0";
         src = ./.;
 
+        dontWrapQtApps = true;
+
         installPhase = ''
           mkdir -p $out/share/sddm/themes/minesddm
           cp -r minesddm/* $out/share/sddm/themes/minesddm/
@@ -20,14 +22,24 @@
 
         meta = with pkgs.lib; {
           description = "A Minecraft-styled SDDM theme";
-          license = licenses.gpl3;
+          license = licenses.agpl3Only;
           platforms = platforms.linux;
         };
       };
     }) // {
-      nixosModules.default = { pkgs, ... }: {
-        environment.systemPackages = [
+      nixosModules.default = { config, pkgs, lib, ... }:
+      let
+        cfg = config.services.xserver.displayManager.sddm;
+        isMinesddmTheme = (cfg.theme == "minesddm") ||
+                           (cfg.settings.Theme.Current == "minesddm");
+      in {
+        environment.systemPackages = with pkgs; [
           self.packages.${pkgs.system}.default
+        ] ++ lib.optionals isMinesddmTheme [
+          qt5.qtbase
+          qt5.qtquickcontrols2
+          qt5.qtgraphicaleffects
+          libsForQt5.layer-shell-qt
         ];
       };
     };
