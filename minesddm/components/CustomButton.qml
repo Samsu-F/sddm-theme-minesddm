@@ -4,6 +4,10 @@ import QtQuick.Controls 2.15
 Button {
     id: customButton
 
+    property url backgroundSource: "../images/button_background.png"
+    property url hoveredBackgroundSource: "../images/selected_button_background.png"
+    property url disabledBackgroundSource: "../images/disabled_button_background.png"
+
     signal customClicked()
 
     width: config.buttonWidth
@@ -20,7 +24,8 @@ Button {
 
             PropertyChanges {
                 target: customButtonBackground
-                source: "../images/selected_button_background.png"
+                // Use hoveredBackgroundSource if provided, otherwise fallback to default
+                source: customButton.hoveredBackgroundSource
             }
 
             PropertyChanges {
@@ -40,7 +45,8 @@ Button {
 
             PropertyChanges {
                 target: customButtonBackground
-                source: "../images/disabled_button_background.png"
+                // Use disabledBackgroundSource if provided, otherwise fallback to default
+                source: customButton.disabledBackgroundSource
             }
 
             PropertyChanges {
@@ -94,7 +100,8 @@ Button {
     background: Image {
         id: customButtonBackground
 
-        source: "../images/button_background.png"
+        // Use backgroundSource if provided, otherwise fallback to default
+        source: customButton.backgroundSource
     }
 
 }

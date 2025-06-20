@@ -236,6 +236,10 @@ Rectangle {
             onCustomClicked: {
                 root.currentActionIndex = (root.currentActionIndex + 1) % root.actionKeys.length;
             }
+	    // Override the default images for this specific button instance
+	    backgroundSource: "../images/small_button_background.png"
+	    hoveredBackgroundSource: "../images/selected_small_button_background.png"
+	    disabledBackgroundSource: "../images/disabled_small_button_background.png"
         }
 
     }
