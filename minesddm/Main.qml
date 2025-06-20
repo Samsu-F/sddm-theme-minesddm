@@ -170,7 +170,9 @@ Rectangle {
             spacing: config.labelFieldSpacing
 
             CustomButton {
-                text: "Session: " + root.getSessionName()
+                text: root.replacePlaceholders(config.sessionText, {
+                    "session": root.getSessionName()
+                })
                 onCustomClicked: {
                     root.sessionIndex = (root.sessionIndex + 1) % sessionModel.count;
                 }
