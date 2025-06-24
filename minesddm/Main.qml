@@ -43,9 +43,9 @@ Rectangle {
             return "Loading sessions...";
         }
         if (sessions.length === 0 || sessionIndex < 0 || sessionIndex >= sessions.length) {
-            return "No sessions found";
+            return "X11"; // terribly dirty workaround that works for me
         }
-        return sessions[sessionIndex].name;
+        return sessions[sessionIndex].name.replace("Plasma (", "").replace(")", "");
     }
 
     function getSessionComment() {
