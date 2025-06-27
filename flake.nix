@@ -29,7 +29,7 @@
     }) // {
       nixosModules.default = { config, pkgs, lib, ... }:
       let
-        cfg = config.services.xserver.displayManager.sddm;
+        cfg = config.services.displayManager.sddm;
         isMinesddmTheme = (cfg.theme == "minesddm") ||
                            (cfg.settings.Theme.Current == "minesddm");
       in {
