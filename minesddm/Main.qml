@@ -45,22 +45,28 @@ Rectangle {
 
     function getSessionName() {
         if (!sessionsInitialized) {
-            return "Loading sessions...";
+            return config.sessionTextOnLoad;
         }
         if (sessions.length === 0 || sessionIndex < 0 || sessionIndex >= sessions.length) {
-            return "No sessions found";
+            return config.sessionTextOnFailure;
         }
-        return sessions[sessionIndex].name;
+        return root.replacePlaceholders(config.sessionText, {
+                    "sessionname": sessions[sessionIndex].name,
+                    "sessioncomment": sessions[sessionIndex].comment
+               });
     }
 
     function getSessionComment() {
         if (!sessionsInitialized) {
-            return "Please wait while available desktop sessions are being loaded...";
+            return config.sessionCommentOnLoad;
         }
         if (sessions.length === 0 || sessionIndex < 0 || sessionIndex >= sessions.length) {
-            return "No session information available";
+            return config.sessionCommentOnFailure;
         }
-        return sessions[sessionIndex].comment;
+        return root.replacePlaceholders(config.sessionComment, {
+                    "sessionname": sessions[sessionIndex].name,
+                    "sessioncomment": sessions[sessionIndex].comment
+               });
     }
 
     function replacePlaceholders(text, placeholders) {
@@ -180,9 +186,7 @@ Rectangle {
             spacing: config.labelFieldSpacing
 
             CustomButton {
-                text: root.replacePlaceholders(config.sessionText, {
-                    "session": root.getSessionName()
-                })
+                text: root.getSessionName()
                 onCustomClicked: {
                     root.sessionIndex = (root.sessionIndex + 1) % sessionModel.count;
                 }
