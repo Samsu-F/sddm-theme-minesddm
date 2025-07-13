@@ -243,13 +243,12 @@ Rectangle {
                 var action = root.actionMap[actionKey];
                 console.log(actionKey + " button clicked");
                 action.method();
-
             }
         }
 
         // Action selector button
         CustomButton {
-            text: "->"
+            text: config.cycleButtonText
             width: config.itemHeight
             onCustomClicked: {
                 root.currentActionIndex = (root.currentActionIndex + 1) % root.actionKeys.length;
