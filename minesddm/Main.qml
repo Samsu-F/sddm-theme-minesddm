@@ -92,7 +92,10 @@ Rectangle {
             }
             return result;
         }
-        else if(passwordTextField.passwordMode === "randomMask") {
+        else if(["randomMask", "jitterMask"].includes(passwordTextField.passwordMode)) {
+            if(passwordTextField.passwordMode === "jitterMask") {
+                randomMaskString = "";
+            }
             while(plainInput.length > randomMaskString.length) {
                 randomMaskString += randomMaskChar();
             }
@@ -207,6 +210,7 @@ Rectangle {
                     config.passwordMode === "noEcho" ? "plain" : // treat it like plain here. The desired effect is achieved by setting the echoMode (see PasswordTextField.qml).
                     config.passwordMode === "fixedMask" ? "fixedMask" :
                     config.passwordMode === "randomMask" ? "randomMask" :
+                    config.passwordMode === "jitterMask" ? "jitterMask" :
                     "plain" // default to this mode if config.passwordMode is an invalid value
                 )
 
