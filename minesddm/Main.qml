@@ -78,6 +78,18 @@ Rectangle {
         return result;
     }
 
+    function maskPassword(plainInput) {
+        let maskPattern = config.passwordFixedMaskString;
+        if (maskPattern === "") {
+            maskPattern = "*"; // fallback
+        }
+        let result = "";
+        for (var i = 0; i < plainInput.length; ++i) {
+            result += maskPattern[i % maskPattern.length];
+        }
+        return result;
+    }
+
     height: config.screenHeight || Screen.height
     width: config.screenWidth || Screen.ScreenWidth
 
@@ -167,13 +179,61 @@ Rectangle {
 
                 focus: true
                 onAccepted: loginButton.clicked()
+
+                // to prevent running into potentially big problems if the user sets config.passwordMode to an invalid value, we sanitize it here
+                readonly property string passwordMode: (
+                    config.passwordMode === "plain" ? "plain" :
+                    config.passwordMode === "fixedMask" ? "fixedMask" :
+                    "plain" // default to this mode if config.passwordMode is an invalid value
+                )
+
+                property string actualPasswordEntered: ""
+                property string maskedPassword: ""
+                property bool ignoreChange: false   // safety switch to prevent unwanted recursion
+
+                onTextChanged: {
+                    if(passwordMode !== "plain" && !ignoreChange){
+                        // careful, there is the recursive case of text.length === actualPasswordEntered.length
+                        if (text.length === actualPasswordEntered.length + 1) { // if a character was added
+                            // insert the newly typed character at the correct position into actualPasswordEntered
+                            actualPasswordEntered = actualPasswordEntered.substring(0, cursorPosition - 1)
+                                                    + text.charAt(cursorPosition - 1)
+                                                    + actualPasswordEntered.substring(cursorPosition - 1, actualPasswordEntered.length);
+                        } else if (text.length === actualPasswordEntered.length - 1) { // if a single character was deleted
+                            // delete the correct char from actualPasswordEntered
+                            actualPasswordEntered = actualPasswordEntered.substring(0, cursorPosition)
+                                                    + actualPasswordEntered.substring(cursorPosition + 1, actualPasswordEntered.length);
+                        } else if(text.length !== actualPasswordEntered.length) { // either multiple characters were deleted at the same time or something went wrong
+                            actualPasswordEntered = "";
+                            ignoreChange = true;
+                            text = "";
+                            ignoreChange = false;
+                        }
+                        maskedPassword = maskPassword(actualPasswordEntered);
+                        ignoreChange = true;
+                        let tmpCursorPosition = cursorPosition;
+                        text = maskedPassword;
+                        cursorPosition = tmpCursorPosition;
+                        ignoreChange = false;
+                    }
+                }
+
+                function getPassword() {
+                    return passwordMode === "plain" ? text : actualPasswordEntered;
+                }
+
+
             }
 
             CustomText {
                 text: passwordTextField.text === "" ? config.passwordBottomLabelIfEmpty :
                         root.replacePlaceholders(config.passwordBottomLabel, {
                             "username": usernameTextField.text,
-                            "password": passwordTextField.text      // I don't know why anyone would use that, but why not provide the option
+                            "password": passwordTextField.text,      // I don't know why anyone would use that, but why not provide the option
+                             // the following placeholder substitutions are useful for debugging:
+                            "maskedPassword": passwordTextField.maskedPassword,
+                            "actualPassword": passwordTextField.actualPasswordEntered,
+                            "cursorPosition": passwordTextField.cursorPosition
                         })
                 color: config.darkText
             }
@@ -227,10 +287,12 @@ Rectangle {
             id: loginButton
 
             text: config.textLoginButton
-            enabled: usernameTextField.text !== "" && passwordTextField.text !== ""
+            enabled: usernameTextField.text !== "" && passwordTextField.getPassword() !== ""
             onCustomClicked: {
                 console.log("login button clicked");
-                sddm.login(usernameTextField.text, passwordTextField.text, root.sessionIndex);
+                let password = passwordTextField.getPassword();
+                // console.log("trying to log in with username = '" + usernameTextField.text + "', password = '" + password + "'"); // only for debugging
+                sddm.login(usernameTextField.text, password, root.sessionIndex);
             }
         }
 
@@ -263,7 +325,10 @@ Rectangle {
 
     Connections {
         function onLoginFailed() {
+            passwordTextField.ignoreChange = true;
             passwordTextField.text = "";
+            passwordTextField.ignoreChange = false;
+            passwordTextField.actualPasswordEntered = "";
             passwordTextField.focus = true;
         }
 
