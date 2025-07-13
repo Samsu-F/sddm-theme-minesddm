@@ -13,22 +13,27 @@ Rectangle {
     // Define a mapping of actions to their corresponding methods and availability
     property var actionMap: ({
         "Power Off": {
+            "text": config.textPowerOffButton,
             "enabled": sddm.canPowerOff,
             "method": sddm.powerOff
         },
         "Reboot": {
+            "text": config.textRebootButton,
             "enabled": sddm.canReboot,
             "method": sddm.reboot
         },
         "Suspend": {
+            "text": config.textSuspendButton,
             "enabled": sddm.canSuspend,
             "method": sddm.suspend
         },
         "Hibernate": {
+            "text": config.textHibernateButton,
             "enabled": sddm.canHibernate,
             "method": sddm.hibernate
         },
         "Hybrid Sleep": {
+            "text": config.textHybridSleepButton,
             "enabled": sddm.canHybridSleep,
             "method": sddm.hybridSleep
         }
@@ -40,22 +45,28 @@ Rectangle {
 
     function getSessionName() {
         if (!sessionsInitialized) {
-            return "Loading sessions...";
+            return config.sessionTextOnLoad;
         }
         if (sessions.length === 0 || sessionIndex < 0 || sessionIndex >= sessions.length) {
-            return "No sessions found";
+            return config.sessionTextOnFailure;
         }
-        return sessions[sessionIndex].name;
+        return root.replacePlaceholders(config.sessionText, {
+                    "sessionname": sessions[sessionIndex].name,
+                    "sessioncomment": sessions[sessionIndex].comment
+               });
     }
 
     function getSessionComment() {
         if (!sessionsInitialized) {
-            return "Please wait while available desktop sessions are being loaded...";
+            return config.sessionCommentOnLoad;
         }
         if (sessions.length === 0 || sessionIndex < 0 || sessionIndex >= sessions.length) {
-            return "No session information available";
+            return config.sessionCommentOnFailure;
         }
-        return sessions[sessionIndex].comment;
+        return root.replacePlaceholders(config.sessionComment, {
+                    "sessionname": sessions[sessionIndex].name,
+                    "sessioncomment": sessions[sessionIndex].comment
+               });
     }
 
     function replacePlaceholders(text, placeholders) {
@@ -134,10 +145,11 @@ Rectangle {
             }
 
             CustomText {
-                text: root.replacePlaceholders(config.usernameBottomLabel, {
-                    "username": usernameTextField.text
-                })
-                color: usernameTextField.text || config.usernameBottomLabelAlways ? config.darkText : "transparent"
+                text: usernameTextField.text === "" ? config.usernameBottomLabelIfEmpty :
+                        root.replacePlaceholders(config.usernameBottomLabel, {
+                            "username": usernameTextField.text
+                        })
+                color: config.darkText
             }
 
         }
@@ -158,8 +170,12 @@ Rectangle {
             }
 
             CustomText {
-                text: config.passwordBottomLabel
-                color: passwordTextField.text || config.passwordBottomLabelAlways ? config.darkText : "transparent"
+                text: passwordTextField.text === "" ? config.passwordBottomLabelIfEmpty :
+                        root.replacePlaceholders(config.passwordBottomLabel, {
+                            "username": usernameTextField.text,
+                            "password": passwordTextField.text      // I don't know why anyone would use that, but why not provide the option
+                        })
+                color: config.darkText
             }
 
         }
@@ -170,9 +186,7 @@ Rectangle {
             spacing: config.labelFieldSpacing
 
             CustomButton {
-                text: root.replacePlaceholders(config.sessionText, {
-                    "session": root.getSessionName()
-                })
+                text: root.getSessionName()
                 onCustomClicked: {
                     root.sessionIndex = (root.sessionIndex + 1) % sessionModel.count;
                 }
@@ -212,7 +226,7 @@ Rectangle {
         CustomButton {
             id: loginButton
 
-            text: "Login"
+            text: config.textLoginButton
             enabled: usernameTextField.text !== "" && passwordTextField.text !== ""
             onCustomClicked: {
                 console.log("login button clicked");
@@ -222,18 +236,19 @@ Rectangle {
 
         // Do Action button
         CustomButton {
-            text: root.actionKeys[root.currentActionIndex]
+            text: root.actionMap[root.actionKeys[root.currentActionIndex]].text
+            enabled: root.actionMap[root.actionKeys[root.currentActionIndex]].enabled
             onCustomClicked: {
-                var action = root.actionMap[root.actionKeys[root.currentActionIndex]];
-                if (action.enabled)
-                    action.method();
-
+                var actionKey = root.actionKeys[root.currentActionIndex]
+                var action = root.actionMap[actionKey];
+                console.log(actionKey + " button clicked");
+                action.method();
             }
         }
 
         // Action selector button
         CustomButton {
-            text: "->"
+            text: config.textCycleButton
             width: config.itemHeight
             onCustomClicked: {
                 root.currentActionIndex = (root.currentActionIndex + 1) % root.actionKeys.length;
