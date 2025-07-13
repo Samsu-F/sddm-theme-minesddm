@@ -13,27 +13,27 @@ Rectangle {
     // Define a mapping of actions to their corresponding methods and availability
     property var actionMap: ({
         "Power Off": {
-            "text": config.powerOffButtonText,
+            "text": config.textPowerOffButton,
             "enabled": sddm.canPowerOff,
             "method": sddm.powerOff
         },
         "Reboot": {
-            "text": config.rebootButtonText,
+            "text": config.textRebootButton,
             "enabled": sddm.canReboot,
             "method": sddm.reboot
         },
         "Suspend": {
-            "text": config.suspendButtonText,
+            "text": config.textSuspendButton,
             "enabled": sddm.canSuspend,
             "method": sddm.suspend
         },
         "Hibernate": {
-            "text": config.hibernateButtonText,
+            "text": config.textHibernateButton,
             "enabled": sddm.canHibernate,
             "method": sddm.hibernate
         },
         "Hybrid Sleep": {
-            "text": config.hybridSleepButtonText,
+            "text": config.textHybridSleepButton,
             "enabled": sddm.canHybridSleep,
             "method": sddm.hybridSleep
         }
@@ -226,7 +226,7 @@ Rectangle {
         CustomButton {
             id: loginButton
 
-            text: config.loginButtonText
+            text: config.textLoginButton
             enabled: usernameTextField.text !== "" && passwordTextField.text !== ""
             onCustomClicked: {
                 console.log("login button clicked");
@@ -248,7 +248,7 @@ Rectangle {
 
         // Action selector button
         CustomButton {
-            text: config.cycleButtonText
+            text: config.textCycleButton
             width: config.itemHeight
             onCustomClicked: {
                 root.currentActionIndex = (root.currentActionIndex + 1) % root.actionKeys.length;
