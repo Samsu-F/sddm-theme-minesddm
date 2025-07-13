@@ -183,6 +183,7 @@ Rectangle {
                 // to prevent running into potentially big problems if the user sets config.passwordMode to an invalid value, we sanitize it here
                 readonly property string passwordMode: (
                     config.passwordMode === "plain" ? "plain" :
+                    config.passwordMode === "noEcho" ? "plain" : // treat it like plain here. The desired effect is achieved by setting the echoMode (see PasswordTextField.qml).
                     config.passwordMode === "fixedMask" ? "fixedMask" :
                     "plain" // default to this mode if config.passwordMode is an invalid value
                 )
