@@ -159,8 +159,12 @@ Rectangle {
             }
 
             CustomText {
-                text: config.passwordBottomLabel
-                color: passwordTextField.text || config.passwordBottomLabelAlways ? config.darkText : "transparent"
+                text: passwordTextField.text === "" ? config.passwordBottomLabelIfEmpty :
+                        root.replacePlaceholders(config.passwordBottomLabel, {
+                            "username": usernameTextField.text,
+                            "password": passwordTextField.text      // I don't know why anyone would use that, but why not provide the option
+                        })
+                color: config.darkText
             }
 
         }
