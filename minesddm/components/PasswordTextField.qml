@@ -2,7 +2,7 @@ import QtQuick 2.15
 import QtQuick.Controls 2.15
 
 TextField {
-    echoMode: TextInput.Normal
+    echoMode: config.passwordMode === "noEcho" ? TextInput.NoEcho : TextInput.Normal
     width: config.inputWidth
     height: config.itemHeight
     color: config.lightText
