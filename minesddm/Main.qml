@@ -151,7 +151,7 @@ Rectangle {
             }
 
             PasswordTextField {
-                id: passswordTextField
+                id: passwordTextField
 
                 focus: true
                 onAccepted: loginButton.clicked()
@@ -159,7 +159,7 @@ Rectangle {
 
             CustomText {
                 text: config.passwordBottomLabel
-                color: passswordTextField.text || config.passwordBottomLabelAlways ? config.darkText : "transparent"
+                color: passwordTextField.text || config.passwordBottomLabelAlways ? config.darkText : "transparent"
             }
 
         }
@@ -213,10 +213,10 @@ Rectangle {
             id: loginButton
 
             text: "Login"
-            enabled: usernameTextField.text !== "" && passswordTextField.text !== ""
+            enabled: usernameTextField.text !== "" && passwordTextField.text !== ""
             onCustomClicked: {
                 console.log("login button clicked");
-                sddm.login(usernameTextField.text, passswordTextField.text, root.sessionIndex);
+                sddm.login(usernameTextField.text, passwordTextField.text, root.sessionIndex);
             }
         }
 
@@ -248,8 +248,8 @@ Rectangle {
 
     Connections {
         function onLoginFailed() {
-            passswordTextField.text = "";
-            passswordTextField.focus = true;
+            passwordTextField.text = "";
+            passwordTextField.focus = true;
         }
 
         target: sddm
