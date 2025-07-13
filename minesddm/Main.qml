@@ -233,10 +233,12 @@ Rectangle {
         // Do Action button
         CustomButton {
             text: root.actionMap[root.actionKeys[root.currentActionIndex]].text
+            enabled: root.actionMap[root.actionKeys[root.currentActionIndex]].enabled
             onCustomClicked: {
-                var action = root.actionMap[root.actionKeys[root.currentActionIndex]];
-                if (action.enabled)
-                    action.method();
+                var actionKey = root.actionKeys[root.currentActionIndex]
+                var action = root.actionMap[actionKey];
+                console.log(actionKey + " button clicked");
+                action.method();
 
             }
         }
