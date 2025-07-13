@@ -78,16 +78,37 @@ Rectangle {
         return result;
     }
 
+    property string randomMaskString: ""
+
     function maskPassword(plainInput) {
-        let maskPattern = config.passwordFixedMaskString;
-        if (maskPattern === "") {
-            maskPattern = "*"; // fallback
+        if(passwordTextField.passwordMode === "fixedMask") {
+            let maskPattern = config.passwordFixedMaskString;
+            if (maskPattern === "" || maskPattern === undefined) {
+                maskPattern = "*"; // fallback
+            }
+            let result = "";
+            for (var i = 0; i < plainInput.length; ++i) {
+                result += maskPattern[i % maskPattern.length];
+            }
+            return result;
         }
-        let result = "";
-        for (var i = 0; i < plainInput.length; ++i) {
-            result += maskPattern[i % maskPattern.length];
+        else if(passwordTextField.passwordMode === "randomMask") {
+            while(plainInput.length > randomMaskString.length) {
+                randomMaskString += randomMaskChar();
+            }
+            // dicard deleted tail so it will be newly generated if chars are added again
+            randomMaskString = randomMaskString.substring(0, plainInput.length);
+            return randomMaskString.substring(0, plainInput.length);
         }
-        return result;
+    }
+
+    function randomMaskChar() {
+        let charSet = config.passwordRandomMaskChars;
+        if(charSet === "" || charSet === undefined) {
+            charSet = "1234567890"; // fallback
+        }
+        const index = Math.floor(Math.random() * charSet.length)
+        return charSet.charAt(index);
     }
 
     height: config.screenHeight || Screen.height
@@ -185,6 +206,7 @@ Rectangle {
                     config.passwordMode === "plain" ? "plain" :
                     config.passwordMode === "noEcho" ? "plain" : // treat it like plain here. The desired effect is achieved by setting the echoMode (see PasswordTextField.qml).
                     config.passwordMode === "fixedMask" ? "fixedMask" :
+                    config.passwordMode === "randomMask" ? "randomMask" :
                     "plain" // default to this mode if config.passwordMode is an invalid value
                 )
 
