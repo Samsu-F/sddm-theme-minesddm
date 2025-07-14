@@ -19,15 +19,28 @@ TextField {
     }
 
     // to prevent running into potentially big problems if the user sets config.passwordMode to an invalid value, we sanitize it here
-    readonly property string passwordMode: (
-        config.passwordMode === "plain" ? "plain" :
-        config.passwordMode === "noEcho" ? "plain" : // treat it like plain here. The desired effect is achieved by setting the echoMode (see above).
-        config.passwordMode === "fixedMask" ? "fixedMask" :
-        config.passwordMode === "randomMask" ? "randomMask" :
-        config.passwordMode === "jitterMask" ? "jitterMask" :
-        "plain" // default to this mode if config.passwordMode is an invalid value
-    )
-    readonly property int maskCharsPerTypedChar: config.maskCharsPerTypedChar && (passwordMode !== "plain") ? config.maskCharsPerTypedChar : 1 // fallback if undefined or 0
+    readonly property string passwordMode: (function(mode) {
+        switch (mode) {
+            case "plain":
+            case "noEcho": // treat it like plain here. The desired effect is achieved by setting the echoMode (see above).
+                return "plain";
+            case "fixedMask":
+            case "randomMask":
+            case "jitterMask":
+                return mode;
+            default:
+                showError("Config error: Invalid passwordMode '" + mode + "'");
+                return "plain"; // save fallback
+        }
+    })(config.passwordMode)
+
+    readonly property int maskCharsPerTypedChar: (function(n) {
+        if(passwordMode === "plain") { return 1; }
+        if(n > 0) { return n; }
+        showError("Config error: Invalid maskCharsPerTypedChar '" + n + "'");
+        return 1; // fallback if undefined or 0
+    })(config.maskCharsPerTypedChar)
+
 
     property string actualPasswordEntered: ""
     property bool ignoreChange: false   // safety switch to prevent unwanted recursion
@@ -81,13 +94,14 @@ TextField {
         else if(["randomMask", "jitterMask"].includes(passwordMode)) {
             return getRandomMask(outputLength);
         }
-        console.error("ERROR: Masking failed for passwordMode '" + passwordMode + "'"); // this line should never be reached
+        showError("ERROR: Masking failed for passwordMode '" + passwordMode + "'"); // this line should never be reached
         return plainInput;
     }
 
     function getFixedMask(outputLength) {
         let maskPattern = config.passwordFixedMaskString;
         if (maskPattern === "" || maskPattern === undefined) {
+            showError("Config error: Invalid passwordFixedMaskString '" + maskPattern + "'");
             maskPattern = "*"; // fallback
         }
         let result = "";
@@ -113,6 +127,7 @@ TextField {
     function randomMaskChar() {
         let charSet = config.passwordRandomMaskChars;
         if(charSet === "" || charSet === undefined) {
+            showError("Config error: Invalid passwordRandomMaskChars '" + charSet + "'");
             charSet = "1234567890"; // fallback
         }
         const index = Math.floor(Math.random() * charSet.length)
