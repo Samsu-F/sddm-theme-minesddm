@@ -27,13 +27,14 @@ TextField {
         config.passwordMode === "jitterMask" ? "jitterMask" :
         "plain" // default to this mode if config.passwordMode is an invalid value
     )
-    readonly property int maskCharsPerTypedChar: config.maskCharsPerTypedChar ? config.maskCharsPerTypedChar : 1 // fallback if undefined or 0
+    readonly property int maskCharsPerTypedChar: config.maskCharsPerTypedChar && (passwordMode !== "plain") ? config.maskCharsPerTypedChar : 1 // fallback if undefined or 0
 
     property string actualPasswordEntered: ""
     property bool ignoreChange: false   // safety switch to prevent unwanted recursion
     property int textLength: 0          // used to be able to tell whether the change was an addition or a deletion
 
     onTextChanged: {
+        cursorMonitor.lock = true;
         let prevTextLength = textLength;
         textLength = text.length;
         if(passwordMode !== "plain" && !ignoreChange) {
@@ -62,8 +63,9 @@ TextField {
             ignoreChange = true;
             text = maskedPassword;
             ignoreChange = false;
-            cursorPosition = simCursorPos * maskCharsPerTypedChar;
+            setCursorPosition(simCursorPos * maskCharsPerTypedChar);
         }
+        cursorMonitor.lock = false;
     }
 
     function getPassword() {
@@ -115,5 +117,35 @@ TextField {
         }
         const index = Math.floor(Math.random() * charSet.length)
         return charSet.charAt(index);
+    }
+
+    Timer {
+        id: cursorMonitor
+        interval: 10
+        running: passwordMode !== "plain" && maskCharsPerTypedChar > 1
+        repeat: true
+
+        property int prevCursorPosition: 0
+        property bool lock: false
+
+        onTriggered: {
+            if (!lock) {
+                let deltaPos = (cursorPosition - prevCursorPosition);
+                if(deltaPos === 1 || deltaPos === -1) {
+                    // probably caused by arrow keys ==> force move
+                    setCursorPosition(prevCursorPosition + maskCharsPerTypedChar * deltaPos);
+                }
+                // set to nearest block border
+                setCursorPosition(Math.round(cursorPosition / maskCharsPerTypedChar) * maskCharsPerTypedChar);
+                prevCursorPosition = cursorPosition;
+            }
+        }
+    }
+
+    function setCursorPosition(pos) {
+        cursorMonitor.lock = true;
+        cursorMonitor.prevCursorPosition = pos;
+        cursorPosition = pos;
+        cursorMonitor.lock = false;
     }
 }
