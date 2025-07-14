@@ -81,13 +81,14 @@ Rectangle {
     property string randomMaskString: ""
 
     function maskPassword(plainInput) {
+        let outputLength = plainInput.length * passwordTextField.maskCharsPerTypedChar;
         if(passwordTextField.passwordMode === "fixedMask") {
             let maskPattern = config.passwordFixedMaskString;
             if (maskPattern === "" || maskPattern === undefined) {
                 maskPattern = "*"; // fallback
             }
             let result = "";
-            for (var i = 0; i < plainInput.length; ++i) {
+            for (let i = 0; i < outputLength; ++i) {
                 result += maskPattern[i % maskPattern.length];
             }
             return result;
@@ -96,20 +97,11 @@ Rectangle {
             if(passwordTextField.passwordMode === "jitterMask") {
                 randomMaskString = "";
             }
-            while(plainInput.length > randomMaskString.length) {
+            while(randomMaskString.length < outputLength) {
                 randomMaskString += randomMaskChar();
             }
             // dicard deleted tail so it will be newly generated if chars are added again
-            randomMaskString = randomMaskString.substring(0, plainInput.length);
-            return randomMaskString;
-        }
-        else if(passwordTextField.passwordMode === "longRandomMask") {
-            let lengthMultiplier = passwordTextField.longMaskLengthMultiplier;
-            while(plainInput.length * lengthMultiplier > randomMaskString.length) {
-                randomMaskString += randomMaskChar();
-            }
-            // dicard deleted tail so it will be newly generated if chars are added again
-            randomMaskString = randomMaskString.substring(0, plainInput.length * lengthMultiplier);
+            randomMaskString = randomMaskString.substring(0, outputLength);
             return randomMaskString;
         }
     }
@@ -220,24 +212,19 @@ Rectangle {
                     config.passwordMode === "fixedMask" ? "fixedMask" :
                     config.passwordMode === "randomMask" ? "randomMask" :
                     config.passwordMode === "jitterMask" ? "jitterMask" :
-                    config.passwordMode === "longRandomMask" ? "longRandomMask" :
                     "plain" // default to this mode if config.passwordMode is an invalid value
                 )
-                readonly property int longMaskLengthMultiplier: config.longMaskLengthMultiplier ? config.longMaskLengthMultiplier : 2 // fallback if undefied or 0
+                readonly property int maskCharsPerTypedChar: config.maskCharsPerTypedChar ? config.maskCharsPerTypedChar : 1 // fallback if undefined or 0
 
                 property string actualPasswordEntered: ""
-                property string maskedPassword: ""
                 property bool ignoreChange: false   // safety switch to prevent unwanted recursion
                 property int textLength: 0          // used to be able to tell whether the change was an addition or a deletion
 
                 onTextChanged: {
-                    var prevTextLength = textLength;
+                    let prevTextLength = textLength;
                     textLength = text.length;
                     if(passwordMode !== "plain" && !ignoreChange) {
-                        var simCursorPos = cursorPosition;
-                        if(passwordMode === "longRandomMask") {
-                            simCursorPos = text.length > prevTextLength ? Math.ceil(cursorPosition / longMaskLengthMultiplier) : Math.floor(cursorPosition / longMaskLengthMultiplier);
-                        }
+                        let simCursorPos = text.length > prevTextLength ? Math.ceil(cursorPosition / maskCharsPerTypedChar) : Math.floor(cursorPosition / maskCharsPerTypedChar);
                         if (text.length === prevTextLength + 1) { // if a character was added
                             // insert the newly typed character at the correct position into actualPasswordEntered
                             actualPasswordEntered = actualPasswordEntered.substring(0, simCursorPos - 1)
@@ -253,11 +240,11 @@ Rectangle {
                             text = "";
                             ignoreChange = false;
                         }
-                        maskedPassword = maskPassword(actualPasswordEntered);
+                        let maskedPassword = maskPassword(actualPasswordEntered);
                         ignoreChange = true;
                         text = maskedPassword;
                         ignoreChange = false;
-                        cursorPosition = simCursorPos * longMaskLengthMultiplier;
+                        cursorPosition = simCursorPos * maskCharsPerTypedChar;
                     }
                 }
 
@@ -274,7 +261,6 @@ Rectangle {
                             "username": usernameTextField.text,
                             "password": passwordTextField.text,      // I don't know why anyone would use that, but why not provide the option
                              // the following placeholder substitutions are useful for debugging:
-                            "maskedPassword": passwordTextField.maskedPassword,
                             "actualPassword": passwordTextField.actualPasswordEntered,
                             "cursorPosition": passwordTextField.cursorPosition
                         })
