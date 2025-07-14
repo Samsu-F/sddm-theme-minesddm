@@ -144,7 +144,8 @@ TextField {
         property bool lock: false
 
         onTriggered: {
-            if (!lock) {
+            const selectionActive = selectionStart !== selectionEnd;
+            if (!lock && !selectionActive) {
                 let deltaPos = (cursorPosition - prevCursorPosition);
                 if(deltaPos === 1 || deltaPos === -1) {
                     // probably caused by arrow keys ==> force move
