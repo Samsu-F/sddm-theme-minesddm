@@ -224,17 +224,22 @@ Rectangle {
                     let prevTextLength = textLength;
                     textLength = text.length;
                     if(passwordMode !== "plain" && !ignoreChange) {
-                        let simCursorPos = text.length > prevTextLength ? Math.ceil(cursorPosition / maskCharsPerTypedChar) : Math.floor(cursorPosition / maskCharsPerTypedChar);
-                        if (text.length === prevTextLength + 1) { // if a character was added
-                            // insert the newly typed character at the correct position into actualPasswordEntered
-                            actualPasswordEntered = actualPasswordEntered.substring(0, simCursorPos - 1)
-                                                    + text.charAt(cursorPosition - 1)
-                                                    + actualPasswordEntered.substring(simCursorPos - 1, actualPasswordEntered.length);
-                        } else if (text.length === prevTextLength - 1) { // if a single character was deleted
-                            // delete the correct char from actualPasswordEntered
+                        let simCursorPos = Math.floor(cursorPosition / maskCharsPerTypedChar); // simulated cursor position of the imaginary cursor in actualPasswordEntered
+                        if (text.length > prevTextLength) { // addition
+                            // insert the newly typed substring at the correct position into actualPasswordEntered
+                            let editLength = text.length - prevTextLength;
+                            let indexSplit = Math.ceil((cursorPosition - editLength + 1) / maskCharsPerTypedChar) - 1;
+                            actualPasswordEntered = actualPasswordEntered.substring(0, indexSplit)
+                                                    + text.substring(cursorPosition - editLength, cursorPosition)
+                                                    + actualPasswordEntered.substring(indexSplit, actualPasswordEntered.length);
+                            simCursorPos = indexSplit + editLength;
+                        } else if (text.length < prevTextLength) { // deletion
+                            // delete the correct substring from actualPasswordEntered
+                            let editLength = Math.ceil((prevTextLength - text.length) / maskCharsPerTypedChar);
                             actualPasswordEntered = actualPasswordEntered.substring(0, simCursorPos)
-                                                    + actualPasswordEntered.substring(simCursorPos + 1, actualPasswordEntered.length);
-                        } else if(text.length !== prevTextLength) { // either multiple characters were deleted at the same time or something went wrong
+                                                    + actualPasswordEntered.substring(simCursorPos + editLength, actualPasswordEntered.length);
+                        } else { // either one or multiple characters were overwritten or something went wrong
+                            // either way, there is no way to know what actually happened.
                             actualPasswordEntered = "";
                             ignoreChange = true;
                             text = "";
