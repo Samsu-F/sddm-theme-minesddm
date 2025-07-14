@@ -58,7 +58,7 @@ TextField {
                 text = "";
                 ignoreChange = false;
             }
-            let maskedPassword = maskPassword(actualPasswordEntered);
+            let maskedPassword = getMask(actualPasswordEntered);
             ignoreChange = true;
             text = maskedPassword;
             ignoreChange = false;
@@ -70,32 +70,42 @@ TextField {
         return passwordMode === "plain" ? text : actualPasswordEntered;
     }
 
-    property string randomMaskString: ""
-
-    function maskPassword(plainInput) {
+    // wrapper function that calls the appropriate function based on the passwordMode
+    function getMask(plainInput) {
         let outputLength = plainInput.length * maskCharsPerTypedChar;
         if(passwordMode === "fixedMask") {
-            let maskPattern = config.passwordFixedMaskString;
-            if (maskPattern === "" || maskPattern === undefined) {
-                maskPattern = "*"; // fallback
-            }
-            let result = "";
-            for (let i = 0; i < outputLength; ++i) {
-                result += maskPattern[i % maskPattern.length];
-            }
-            return result;
+            return getFixedMask(outputLength);
         }
         else if(["randomMask", "jitterMask"].includes(passwordMode)) {
-            if(passwordMode === "jitterMask") {
-                randomMaskString = "";
-            }
-            while(randomMaskString.length < outputLength) {
-                randomMaskString += randomMaskChar();
-            }
-            // dicard deleted tail so it will be newly generated if chars are added again
-            randomMaskString = randomMaskString.substring(0, outputLength);
-            return randomMaskString;
+            return getRandomMask(outputLength);
         }
+        console.error("ERROR: Masking failed for passwordMode '" + passwordMode + "'"); // this line should never be reached
+        return plainInput;
+    }
+
+    function getFixedMask(outputLength) {
+        let maskPattern = config.passwordFixedMaskString;
+        if (maskPattern === "" || maskPattern === undefined) {
+            maskPattern = "*"; // fallback
+        }
+        let result = "";
+        for (let i = 0; i < outputLength; ++i) {
+            result += maskPattern[i % maskPattern.length];
+        }
+        return result;
+    }
+
+    property string randomMaskString: ""
+    function getRandomMask(outputLength) {
+        if(passwordMode === "jitterMask") {
+            randomMaskString = "";
+        }
+        while(randomMaskString.length < outputLength) {
+            randomMaskString += randomMaskChar();
+        }
+        // dicard deleted tail so it will be newly generated if chars are added again
+        randomMaskString = randomMaskString.substring(0, outputLength);
+        return randomMaskString;
     }
 
     function randomMaskChar() {
