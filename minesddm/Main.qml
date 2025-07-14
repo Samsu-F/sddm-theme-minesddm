@@ -101,7 +101,16 @@ Rectangle {
             }
             // dicard deleted tail so it will be newly generated if chars are added again
             randomMaskString = randomMaskString.substring(0, plainInput.length);
-            return randomMaskString.substring(0, plainInput.length);
+            return randomMaskString;
+        }
+        else if(passwordTextField.passwordMode === "longRandomMask") {
+            let lengthMultiplier = passwordTextField.longMaskLengthMultiplier;
+            while(plainInput.length * lengthMultiplier > randomMaskString.length) {
+                randomMaskString += randomMaskChar();
+            }
+            // dicard deleted tail so it will be newly generated if chars are added again
+            randomMaskString = randomMaskString.substring(0, plainInput.length * lengthMultiplier);
+            return randomMaskString;
         }
     }
 
@@ -211,26 +220,34 @@ Rectangle {
                     config.passwordMode === "fixedMask" ? "fixedMask" :
                     config.passwordMode === "randomMask" ? "randomMask" :
                     config.passwordMode === "jitterMask" ? "jitterMask" :
+                    config.passwordMode === "longRandomMask" ? "longRandomMask" :
                     "plain" // default to this mode if config.passwordMode is an invalid value
                 )
+                readonly property int longMaskLengthMultiplier: config.longMaskLengthMultiplier ? config.longMaskLengthMultiplier : 2 // fallback if undefied or 0
 
                 property string actualPasswordEntered: ""
                 property string maskedPassword: ""
                 property bool ignoreChange: false   // safety switch to prevent unwanted recursion
+                property int textLength: 0          // used to be able to tell whether the change was an addition or a deletion
 
                 onTextChanged: {
-                    if(passwordMode !== "plain" && !ignoreChange){
-                        // careful, there is the recursive case of text.length === actualPasswordEntered.length
-                        if (text.length === actualPasswordEntered.length + 1) { // if a character was added
+                    var prevTextLength = textLength;
+                    textLength = text.length;
+                    if(passwordMode !== "plain" && !ignoreChange) {
+                        var simCursorPos = cursorPosition;
+                        if(passwordMode === "longRandomMask") {
+                            simCursorPos = text.length > prevTextLength ? Math.ceil(cursorPosition / longMaskLengthMultiplier) : Math.floor(cursorPosition / longMaskLengthMultiplier);
+                        }
+                        if (text.length === prevTextLength + 1) { // if a character was added
                             // insert the newly typed character at the correct position into actualPasswordEntered
-                            actualPasswordEntered = actualPasswordEntered.substring(0, cursorPosition - 1)
+                            actualPasswordEntered = actualPasswordEntered.substring(0, simCursorPos - 1)
                                                     + text.charAt(cursorPosition - 1)
-                                                    + actualPasswordEntered.substring(cursorPosition - 1, actualPasswordEntered.length);
-                        } else if (text.length === actualPasswordEntered.length - 1) { // if a single character was deleted
+                                                    + actualPasswordEntered.substring(simCursorPos - 1, actualPasswordEntered.length);
+                        } else if (text.length === prevTextLength - 1) { // if a single character was deleted
                             // delete the correct char from actualPasswordEntered
-                            actualPasswordEntered = actualPasswordEntered.substring(0, cursorPosition)
-                                                    + actualPasswordEntered.substring(cursorPosition + 1, actualPasswordEntered.length);
-                        } else if(text.length !== actualPasswordEntered.length) { // either multiple characters were deleted at the same time or something went wrong
+                            actualPasswordEntered = actualPasswordEntered.substring(0, simCursorPos)
+                                                    + actualPasswordEntered.substring(simCursorPos + 1, actualPasswordEntered.length);
+                        } else if(text.length !== prevTextLength) { // either multiple characters were deleted at the same time or something went wrong
                             actualPasswordEntered = "";
                             ignoreChange = true;
                             text = "";
@@ -238,10 +255,9 @@ Rectangle {
                         }
                         maskedPassword = maskPassword(actualPasswordEntered);
                         ignoreChange = true;
-                        let tmpCursorPosition = cursorPosition;
                         text = maskedPassword;
-                        cursorPosition = tmpCursorPosition;
                         ignoreChange = false;
+                        cursorPosition = simCursorPos * longMaskLengthMultiplier;
                     }
                 }
 
