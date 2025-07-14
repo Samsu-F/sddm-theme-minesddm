@@ -78,6 +78,11 @@ Rectangle {
         return result;
     }
 
+    function showError(errorMessage) {
+        console.error(errorMessage);
+        errorLabel.text += errorMessage + "\n";
+    }
+
     height: config.screenHeight || Screen.height
     width: config.screenWidth || Screen.ScreenWidth
 
@@ -98,6 +103,17 @@ Rectangle {
             fill: parent
         }
 
+    }
+
+    Label {
+        id: errorLabel
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.margins: 10
+        text: ""
+        color: "#00ffff"
+        font.pixelSize: 16
+        visible: text.length > 0
     }
 
     Column {
