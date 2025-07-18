@@ -54,6 +54,10 @@ Rectangle {
     }
 
     function formatString(str) {
+        if(str === undefined) {
+            showError("formatString: str is undefined.")
+            return -1;
+        }
         while(true) {
             let closingIndex = findFirstUnescaped(str, '}');
             if(closingIndex === -1) {
@@ -90,8 +94,13 @@ Rectangle {
                 ["{username}", usernameTextField.text],
                 ["{password}", passwordTextField.getPassword()],
                 ["{maskedPassword}", passwordTextField.displayText],
-                ["{actionIndex}", root.currentActionIndex],
-                ["{nextActionIndex}", (root.currentActionIndex + 1) % root.actionKeys.length],
+                ["{actionIndex}", `${root.currentActionIndex}`],
+                ["{nextActionIndex}", `${(root.currentActionIndex + 1) % root.actionKeys.length}`],
+                ["{sessionName}", root.getSessionName()],
+                ["{sessionComment}", root.getSessionComment()],
+                ["{sessionIndex}", `${sessionIndex}`],
+                ["{sessionsCount}", `${sessionModel.count}`],
+                ["{sessionsInitialized}", sessionsInitialized ? "true" : ""],
             ]);
 
             if (!placeholderMap.has(str)) {
@@ -165,37 +174,22 @@ Rectangle {
 
     function getSessionName() {
         if (!sessionsInitialized) {
-            return config.sessionTextOnLoad;
+            return "";
         }
         if (sessions.length === 0 || sessionIndex < 0 || sessionIndex >= sessions.length) {
-            return config.sessionTextOnFailure;
+            return "";
         }
-        return root.replacePlaceholders(config.sessionText, {
-                    "sessionname": sessions[sessionIndex].name,
-                    "sessioncomment": sessions[sessionIndex].comment
-               });
+        return sessions[sessionIndex].name;
     }
 
     function getSessionComment() {
         if (!sessionsInitialized) {
-            return config.sessionCommentOnLoad;
+            return "";
         }
         if (sessions.length === 0 || sessionIndex < 0 || sessionIndex >= sessions.length) {
-            return config.sessionCommentOnFailure;
+            return "";
         }
-        return root.replacePlaceholders(config.sessionComment, {
-                    "sessionname": sessions[sessionIndex].name,
-                    "sessioncomment": sessions[sessionIndex].comment
-               });
-    }
-
-    function replacePlaceholders(text, placeholders) {
-        let result = text;
-        for (let key in placeholders) {
-            let placeholder = "{" + key + "}"; // Match the placeholder format
-            result = result.replace(placeholder, placeholders[key]);
-        }
-        return result;
+        return sessions[sessionIndex].comment;
     }
 
     function showError(errorMessage) {
@@ -315,7 +309,7 @@ Rectangle {
             spacing: config.labelFieldSpacing
 
             CustomButton {
-                text: root.getSessionName()
+                text: formatString(config.textSessionButton)
                 onCustomClicked: {
                     root.sessionIndex = (root.sessionIndex + 1) % sessionModel.count;
                 }
@@ -331,7 +325,7 @@ Rectangle {
             }
 
             CustomText {
-                text: root.getSessionComment()
+                text: formatString(config.sessionButtonBottomLabel)
                 wrapMode: Text.Wrap
                 width: config.inputWidth
             }
