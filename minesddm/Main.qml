@@ -243,7 +243,7 @@ Rectangle {
 
         // Main title
         CustomText {
-            text: config.mainTitleText
+            text: formatString(config.mainTitleText)
             color: config.lightText
 
             anchors {
@@ -270,6 +270,7 @@ Rectangle {
             UsernameTextField {
                 id: usernameTextField
 
+                placeholderText: formatString(config.usernamePlaceholder)
                 text: userModel.lastUser
                 onAccepted: loginButton.clicked()
             }
@@ -292,6 +293,7 @@ Rectangle {
             PasswordTextField {
                 id: passwordTextField
 
+                placeholderText: formatString(config.passwordPlaceholder)
                 focus: true
                 onAccepted: loginButton.clicked()
             }
