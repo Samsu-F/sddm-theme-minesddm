@@ -5,7 +5,6 @@ TextField {
     width: config.inputWidth
     height: config.itemHeight
     color: config.lightText
-    placeholderText: config.usernamePlaceholder
     placeholderTextColor: config.darkText
 
     font {
