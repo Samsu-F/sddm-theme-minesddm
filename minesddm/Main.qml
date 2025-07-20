@@ -7,7 +7,7 @@ import "components"
 Rectangle {
     id: root
 
-    readonly property var escapeCharacter: '%'
+    readonly property var escapeCharacter: '%' // also change the explanation in config file accordingly, if you change this
 
     function findFirstUnescaped(str, searchChar) {
         if(searchChar === escapeCharacter) {
