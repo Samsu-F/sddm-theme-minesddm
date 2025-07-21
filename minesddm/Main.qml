@@ -20,7 +20,7 @@ Rectangle {
             ["{sessionComment}", root.getSessionComment()],
             ["{sessionIndex}", `${sessionIndex}`],
             ["{sessionsCount}", `${sessionModel.count}`],
-            ["{sessionsInitialized}", sessionsInitialized ? "true" : ""],
+            ["{sessionInitialized}", sessionsInitialized > sessionIndex ? "true" : ""],
         ]);
     }
 
@@ -58,10 +58,10 @@ Rectangle {
     property var actionKeys: Object.keys(root.actionMap)
     property int currentActionIndex: 0
 
-    property bool sessionsInitialized: false
+    property int sessionsInitialized: 0
 
     function getSessionName() {
-        if (!sessionsInitialized) {
+        if (sessionIndex >= sessionsInitialized) {
             return "";
         }
         if (sessions.length === 0 || sessionIndex < 0 || sessionIndex >= sessions.length) {
@@ -71,7 +71,7 @@ Rectangle {
     }
 
     function getSessionComment() {
-        if (!sessionsInitialized) {
+        if (sessionIndex >= sessionsInitialized) {
             return "";
         }
         if (sessions.length === 0 || sessionIndex < 0 || sessionIndex >= sessions.length) {
