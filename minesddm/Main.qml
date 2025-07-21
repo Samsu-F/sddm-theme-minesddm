@@ -36,10 +36,10 @@ Rectangle {
     property var actionKeys: Object.keys(root.actionMap)
     property int currentActionIndex: 0
 
-    property bool sessionsInitialized: false
+    property int sessionsInitialized: 0
 
     function getSessionName() {
-        if (!sessionsInitialized) {
+        if (sessionIndex >= sessionsInitialized) {
             return "Loading sessions...";
         }
         if (sessions.length === 0 || sessionIndex < 0 || sessionIndex >= sessions.length) {
@@ -49,7 +49,7 @@ Rectangle {
     }
 
     function getSessionComment() {
-        if (!sessionsInitialized) {
+        if (sessionIndex >= sessionsInitialized) {
             return "Please wait while available desktop sessions are being loaded...";
         }
         if (sessions.length === 0 || sessionIndex < 0 || sessionIndex >= sessions.length) {

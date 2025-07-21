@@ -17,7 +17,7 @@ Instantiator {
                 "comment": model.comment
             });
 
-            root.sessionsInitialized = true;
+            root.sessionsInitialized = root.sessions.length;
         }
     }
 }
