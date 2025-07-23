@@ -1,4 +1,4 @@
-// This is a huge workarround to just to get the name of the sessions
+// This is a huge workaround to just to get the name of the sessions
 // For some reason sessionModel.get is not working so I came up with this:
 // This will store the values of sessionModel in a list for later use
 
@@ -7,17 +7,36 @@ import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Window 2.15
 
-Instantiator {
-    model: sessionModel
+Item {
+    id: sessionHandler
 
-    delegate: QtObject {
-        Component.onCompleted: {
-            root.sessions.push({
-                "name": model.name,
-                "comment": model.comment
-            });
+    property ListModel sessions: ListModel {}
+    property int sessionIndex: sessionModel.lastIndex
 
-            root.sessionsInitialized = root.sessions.length;
+    function isValidIndex() {
+        return sessionIndex >= 0 && sessionIndex < sessions.count;
+    }
+
+    function getSessionName() {
+        return isValidIndex() ? sessions.get(sessionIndex).name : "";
+    }
+
+    function getSessionComment() {
+        return isValidIndex() ? sessions.get(sessionIndex).comment : "";
+    }
+
+    Instantiator {
+        model: sessionModel
+
+        delegate: QtObject {
+            Component.onCompleted: {
+                // Add session to ListModel
+                sessions.append({
+                    "name": model.name,
+                    "comment": model.comment
+                });
+            }
         }
     }
+
 }

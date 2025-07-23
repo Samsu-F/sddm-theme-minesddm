@@ -7,26 +7,6 @@ import "components"
 Rectangle {
     id: root
 
-    Formatter {
-        id: formatter
-
-        placeholderMap: new Map([
-            ["{username}", usernameTextField.text],
-            ["{password}", passwordTextField.getPassword()],
-            ["{maskedPassword}", passwordTextField.displayText],
-            ["{actionIndex}", `${root.currentActionIndex}`],
-            ["{nextActionIndex}", `${(root.currentActionIndex + 1) % root.actionKeys.length}`],
-            ["{sessionName}", root.getSessionName()],
-            ["{sessionComment}", root.getSessionComment()],
-            ["{sessionIndex}", `${sessionIndex}`],
-            ["{sessionsCount}", `${sessionModel.count}`],
-            ["{sessionInitialized}", sessionsInitialized > sessionIndex ? "true" : ""],
-        ]);
-    }
-
-    // Session properties. Please look at the SessionHandler.qml file to understand hwo these properties work
-    property int sessionIndex: sessionModel.lastIndex
-    property var sessions: []
     // Define a mapping of actions to their corresponding methods and availability
     property var actionMap: ({
         "Power Off": {
@@ -58,28 +38,6 @@ Rectangle {
     property var actionKeys: Object.keys(root.actionMap)
     property int currentActionIndex: 0
 
-    property int sessionsInitialized: 0
-
-    function getSessionName() {
-        if (sessionIndex >= sessionsInitialized) {
-            return "";
-        }
-        if (sessions.length === 0 || sessionIndex < 0 || sessionIndex >= sessions.length) {
-            return "";
-        }
-        return sessions[sessionIndex].name;
-    }
-
-    function getSessionComment() {
-        if (sessionIndex >= sessionsInitialized) {
-            return "";
-        }
-        if (sessions.length === 0 || sessionIndex < 0 || sessionIndex >= sessions.length) {
-            return "";
-        }
-        return sessions[sessionIndex].comment;
-    }
-
     function showError(errorMessage) {
         console.error(errorMessage);
         errorLabel.text += errorMessage + "\n";
@@ -87,6 +45,27 @@ Rectangle {
 
     height: config.screenHeight || Screen.height
     width: config.screenWidth || Screen.ScreenWidth
+
+    SessionHandler {
+        id: sessionHandler
+    }
+
+    Formatter {
+        id: formatter
+
+        placeholderMap: new Map([
+            ["{username}", usernameTextField.text],
+            ["{password}", passwordTextField.getPassword()],
+            ["{maskedPassword}", passwordTextField.displayText],
+            ["{actionIndex}", `${root.currentActionIndex}`],
+            ["{nextActionIndex}", `${(root.currentActionIndex + 1) % root.actionKeys.length}`],
+            ["{sessionName}", sessionHandler.getSessionName()],
+            ["{sessionComment}", sessionHandler.getSessionComment()],
+            ["{sessionIndex}", `${sessionHandler.sessionIndex}`],
+            ["{sessionsCount}", `${sessionModel.count}`],
+            ["{sessionInitialized}", sessionHandler.sessions.count > sessionHandler.sessionIndex ? "true" : ""]
+        ])
+    }
 
     // Load the minecraft font
     FontLoader {
@@ -109,6 +88,7 @@ Rectangle {
 
     Label {
         id: errorLabel
+
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.margins: 10
@@ -187,7 +167,7 @@ Rectangle {
             }
 
             CustomText {
-                text: formatter.formatString(config.passwordBottomLabel);
+                text: formatter.formatString(config.passwordBottomLabel)
                 color: config.darkText
             }
 
@@ -201,15 +181,11 @@ Rectangle {
             CustomButton {
                 text: formatter.formatString(config.textSessionButton)
                 onCustomClicked: {
-                    root.sessionIndex = (root.sessionIndex + 1) % sessionModel.count;
+                    sessionHandler.sessionIndex = (sessionHandler.sessionIndex + 1) % sessionModel.count;
                 }
 
                 anchors {
                     horizontalCenter: parent.horizontalCenter
-                }
-
-                SessionHandler {
-                    // Please look at the SessionHandler.qml file to understand what is happening here
                 }
 
             }
@@ -245,7 +221,7 @@ Rectangle {
                 console.log("login button clicked");
                 let password = passwordTextField.getPassword();
                 // console.log("trying to log in with username = '" + usernameTextField.text + "', password = '" + password + "'"); // only for debugging
-                sddm.login(usernameTextField.text, password, root.sessionIndex);
+                sddm.login(usernameTextField.text, password, sessionHandler.sessionIndex);
             }
         }
 
@@ -254,7 +230,7 @@ Rectangle {
             text: formatter.formatString(root.actionMap[root.actionKeys[root.currentActionIndex]].text)
             enabled: root.actionMap[root.actionKeys[root.currentActionIndex]].enabled
             onCustomClicked: {
-                var actionKey = root.actionKeys[root.currentActionIndex]
+                var actionKey = root.actionKeys[root.currentActionIndex];
                 var action = root.actionMap[actionKey];
                 console.log(actionKey + " button clicked");
                 action.method();
@@ -268,10 +244,10 @@ Rectangle {
             onCustomClicked: {
                 root.currentActionIndex = (root.currentActionIndex + 1) % root.actionKeys.length;
             }
-	    // Override the default images for this specific button instance
-	    backgroundSource: "../images/small_button_background.png"
-	    hoveredBackgroundSource: "../images/selected_small_button_background.png"
-	    disabledBackgroundSource: "../images/disabled_small_button_background.png"
+            // Override the default images for this specific button instance
+            backgroundSource: "../images/small_button_background.png"
+            hoveredBackgroundSource: "../images/selected_small_button_background.png"
+            disabledBackgroundSource: "../images/disabled_small_button_background.png"
         }
 
     }
