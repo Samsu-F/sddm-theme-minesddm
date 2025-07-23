@@ -13,24 +13,16 @@ Item {
     property ListModel sessions: ListModel {}
     property int sessionIndex: sessionModel.lastIndex
 
+    function isValidIndex() {
+        return sessionIndex >= 0 && sessionIndex < sessions.count;
+    }
+
     function getSessionName() {
-        if (sessionIndex >= sessions.count)
-            return "";
-
-        if (sessions.count === 0 || sessionIndex < 0 || sessionIndex >= sessions.count)
-            return "";
-
-        return sessions.get(sessionIndex).name;
+        return isValidIndex() ? sessions.get(sessionIndex).name : "";
     }
 
     function getSessionComment() {
-        if (sessionIndex >= sessions.count)
-            return "";
-
-        if (sessions.count === 0 || sessionIndex < 0 || sessionIndex >= sessions.count)
-            return "";
-
-        return sessions.get(sessionIndex).comment;
+        return isValidIndex() ? sessions.get(sessionIndex).comment : "";
     }
 
     Instantiator {
