@@ -2,83 +2,38 @@ import QtQuick 2.15
 import QtQuick.Controls 2.15
 
 TextField {
-    echoMode: config.passwordMode === "noEcho" ? TextInput.NoEcho : TextInput.Normal
-    width: config.inputWidth
-    height: config.itemHeight
-    color: config.lightText
-    placeholderTextColor: config.darkText
-    leftPadding: config.inputLeftPadding
-
-    font {
-        family: minecraftFont.name
-        pixelSize: config.fontPixelSize
-    }
-
-    background: TextFieldBackground {
-    }
-
     // to prevent running into potentially big problems if the user sets config.passwordMode to an invalid value, we sanitize it here
     readonly property string passwordMode: (function(mode) {
         switch (mode) {
-            case "plain":
-            case "noEcho": // treat it like plain here. The desired effect is achieved by setting the echoMode (see above).
-                return "plain";
-            case "fixedMask":
-            case "randomMask":
-            case "jitterMask":
-                return mode;
-            default:
-                showError("Config error: Invalid passwordMode '" + mode + "'");
-                return "plain"; // save fallback
+        case "plain":
+        case "noEcho":
+            // treat it like plain here. The desired effect is achieved by setting the echoMode (see above).
+            return "plain";
+        case "fixedMask":
+        case "randomMask":
+        case "jitterMask":
+            return mode;
+        default:
+            showError("Config error: Invalid passwordMode '" + mode + "'");
+            return "plain"; // save fallback
         }
     })(config.passwordMode)
-
     readonly property int maskCharsPerTypedChar: (function(n) {
-        if(passwordMode === "plain") { return 1; }
-        if(n > 0) { return n; }
+        if (passwordMode === "plain") {
+            return 1;
+        }
+
+        if (n > 0) {
+            return n;
+        }
+        
         showError("Config error: Invalid maskCharsPerTypedChar '" + n + "'");
         return 1; // fallback if undefined or 0
     })(config.maskCharsPerTypedChar)
-
-
     property string actualPasswordEntered: ""
-    property bool ignoreChange: false   // safety switch to prevent unwanted recursion
-    property int textLength: 0          // used to be able to tell whether the change was an addition or a deletion
-
-    onTextChanged: {
-        cursorMonitor.lock = true;
-        let prevTextLength = textLength;
-        textLength = text.length;
-        if(passwordMode !== "plain" && !ignoreChange) {
-            let simCursorPos = Math.floor(cursorPosition / maskCharsPerTypedChar); // simulated cursor position of the imaginary cursor in actualPasswordEntered
-            if (text.length > prevTextLength) { // addition
-                // insert the newly typed substring at the correct position into actualPasswordEntered
-                let editLength = text.length - prevTextLength;
-                let indexSplit = Math.ceil((cursorPosition - editLength + 1) / maskCharsPerTypedChar) - 1;
-                actualPasswordEntered = actualPasswordEntered.substring(0, indexSplit)
-                                        + text.substring(cursorPosition - editLength, cursorPosition)
-                                        + actualPasswordEntered.substring(indexSplit, actualPasswordEntered.length);
-                simCursorPos = indexSplit + editLength;
-            } else if (text.length < prevTextLength) { // deletion
-                // delete the correct substring from actualPasswordEntered
-                let editLength = Math.ceil((prevTextLength - text.length) / maskCharsPerTypedChar);
-                actualPasswordEntered = actualPasswordEntered.substring(0, simCursorPos)
-                                        + actualPasswordEntered.substring(simCursorPos + editLength, actualPasswordEntered.length);
-            } else { // either one or multiple characters were overwritten or something went wrong
-                // either way, there is no way to know what actually happened.
-                actualPasswordEntered = "";
-                ignoreChange = true;
-                text = "";
-                ignoreChange = false;
-            }
-            let maskedPassword = getMask(actualPasswordEntered);
-            ignoreChange = true;
-            text = maskedPassword;
-            ignoreChange = false;
-            setCursorPosition(simCursorPos * maskCharsPerTypedChar);
-        }
-        cursorMonitor.lock = false;
-    }
+    property bool ignoreChange: false // safety switch to prevent unwanted recursion
+    property int textLength: 0 // used to be able to tell whether the change was an addition or a deletion
+    property string randomMaskString: ""
 
     function getPassword() {
         return passwordMode === "plain" ? text : actualPasswordEntered;
@@ -87,10 +42,9 @@ TextField {
     // wrapper function that calls the appropriate function based on the passwordMode
     function getMask(plainInput) {
         let outputLength = plainInput.length * maskCharsPerTypedChar;
-        if(passwordMode === "fixedMask") {
+        if (passwordMode === "fixedMask") {
             return getFixedMask(outputLength);
-        }
-        else if(["randomMask", "jitterMask"].includes(passwordMode)) {
+        } else if (["randomMask", "jitterMask"].includes(passwordMode)) {
             return getRandomMask(outputLength);
         }
         showError("ERROR: Masking failed for passwordMode '" + passwordMode + "'"); // this line should never be reached
@@ -110,14 +64,15 @@ TextField {
         return result;
     }
 
-    property string randomMaskString: ""
     function getRandomMask(outputLength) {
-        if(passwordMode === "jitterMask") {
+        if (passwordMode === "jitterMask") {
             randomMaskString = "";
         }
-        while(randomMaskString.length < outputLength) {
+
+        while (randomMaskString.length < outputLength) {
             randomMaskString += randomMaskChar();
         }
+
         // dicard deleted tail so it will be newly generated if chars are added again
         randomMaskString = randomMaskString.substring(0, outputLength);
         return randomMaskString;
@@ -125,36 +80,12 @@ TextField {
 
     function randomMaskChar() {
         let charSet = config.passwordRandomMaskChars;
-        if(charSet === "" || charSet === undefined) {
+        if (charSet === "" || charSet === undefined) {
             showError("Config error: Invalid passwordRandomMaskChars '" + charSet + "'");
             charSet = "1234567890"; // fallback
         }
-        const index = Math.floor(Math.random() * charSet.length)
+        const index = Math.floor(Math.random() * charSet.length);
         return charSet.charAt(index);
-    }
-
-    Timer {
-        id: cursorMonitor
-        interval: 10
-        running: passwordMode !== "plain" && maskCharsPerTypedChar > 1
-        repeat: true
-
-        property int prevCursorPosition: 0
-        property bool lock: false
-
-        onTriggered: {
-            const selectionActive = selectionStart !== selectionEnd;
-            if (!lock && !selectionActive) {
-                let deltaPos = (cursorPosition - prevCursorPosition);
-                if(deltaPos === 1 || deltaPos === -1) {
-                    // probably caused by arrow keys ==> force move
-                    setCursorPosition(prevCursorPosition + maskCharsPerTypedChar * deltaPos);
-                }
-                // set to nearest block border
-                setCursorPosition(Math.round(cursorPosition / maskCharsPerTypedChar) * maskCharsPerTypedChar);
-                prevCursorPosition = cursorPosition;
-            }
-        }
     }
 
     function setCursorPosition(pos) {
@@ -163,4 +94,79 @@ TextField {
         cursorPosition = pos;
         cursorMonitor.lock = false;
     }
+
+    echoMode: config.passwordMode === "noEcho" ? TextInput.NoEcho : TextInput.Normal
+    width: config.inputWidth
+    height: config.itemHeight
+    color: config.lightText
+    placeholderTextColor: config.darkText
+    leftPadding: config.inputLeftPadding
+    onTextChanged: {
+        cursorMonitor.lock = true;
+        let prevTextLength = textLength;
+        textLength = text.length;
+        if (passwordMode !== "plain" && !ignoreChange) {
+            let simCursorPos = Math.floor(cursorPosition / maskCharsPerTypedChar); // simulated cursor position of the imaginary cursor in actualPasswordEntered
+            if (text.length > prevTextLength) {
+                // addition
+                // insert the newly typed substring at the correct position into actualPasswordEntered
+                let editLength = text.length - prevTextLength;
+                let indexSplit = Math.ceil((cursorPosition - editLength + 1) / maskCharsPerTypedChar) - 1;
+                actualPasswordEntered = actualPasswordEntered.substring(0, indexSplit) + text.substring(cursorPosition - editLength, cursorPosition) + actualPasswordEntered.substring(indexSplit, actualPasswordEntered.length);
+                simCursorPos = indexSplit + editLength;
+            } else if (text.length < prevTextLength) {
+                // deletion
+                // delete the correct substring from actualPasswordEntered
+                let editLength = Math.ceil((prevTextLength - text.length) / maskCharsPerTypedChar);
+                actualPasswordEntered = actualPasswordEntered.substring(0, simCursorPos) + actualPasswordEntered.substring(simCursorPos + editLength, actualPasswordEntered.length);
+            } else {
+                // either one or multiple characters were overwritten or something went wrong
+                // either way, there is no way to know what actually happened.
+                actualPasswordEntered = "";
+                ignoreChange = true;
+                text = "";
+                ignoreChange = false;
+            }
+            let maskedPassword = getMask(actualPasswordEntered);
+            ignoreChange = true;
+            text = maskedPassword;
+            ignoreChange = false;
+            setCursorPosition(simCursorPos * maskCharsPerTypedChar);
+        }
+        cursorMonitor.lock = false;
+    }
+
+    font {
+        family: minecraftFont.name
+        pixelSize: config.fontPixelSize
+    }
+
+    Timer {
+        id: cursorMonitor
+
+        property int prevCursorPosition: 0
+        property bool lock: false
+
+        interval: 10
+        running: passwordMode !== "plain" && maskCharsPerTypedChar > 1
+        repeat: true
+        onTriggered: {
+            const selectionActive = selectionStart !== selectionEnd;
+            if (!lock && !selectionActive) {
+                let deltaPos = (cursorPosition - prevCursorPosition);
+                if (deltaPos === 1 || deltaPos === -1) {
+                    // probably caused by arrow keys ==> force move
+                    setCursorPosition(prevCursorPosition + maskCharsPerTypedChar * deltaPos);
+                }
+                
+                // set to nearest block border
+                setCursorPosition(Math.round(cursorPosition / maskCharsPerTypedChar) * maskCharsPerTypedChar);
+                prevCursorPosition = cursorPosition;
+            }
+        }
+    }
+
+    background: TextFieldBackground {
+    }
+
 }

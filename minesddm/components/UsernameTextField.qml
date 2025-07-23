@@ -6,12 +6,12 @@ TextField {
     height: config.itemHeight
     color: config.lightText
     placeholderTextColor: config.darkText
+    leftPadding: config.inputLeftPadding
 
     font {
         family: minecraftFont.name
         pixelSize: config.fontPixelSize
     }
-    leftPadding: config.inputLeftPadding
 
     background: TextFieldBackground {
     }
