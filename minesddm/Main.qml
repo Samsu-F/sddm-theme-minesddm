@@ -63,7 +63,7 @@ Rectangle {
             ["{sessionComment}", sessionHandler.getSessionComment()],
             ["{sessionIndex}", `${sessionHandler.sessionIndex}`],
             ["{sessionsCount}", `${sessionModel.count}`],
-            ["{sessionInitialized}", sessionHandler.sessionsInitialized > sessionHandler.sessionIndex ? "true" : ""]
+            ["{sessionInitialized}", sessionHandler.sessions.count > sessionHandler.sessionIndex ? "true" : ""]
         ])
     }
 

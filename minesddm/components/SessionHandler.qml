@@ -10,28 +10,27 @@ import QtQuick.Window 2.15
 Item {
     id: sessionHandler
 
-    property var sessions: []
+    property ListModel sessions: ListModel {}
     property int sessionIndex: sessionModel.lastIndex
-    property int sessionsInitialized: 0
 
     function getSessionName() {
-        if (sessionIndex >= sessionsInitialized)
+        if (sessionIndex >= sessions.count)
             return "";
 
-        if (sessions.length === 0 || sessionIndex < 0 || sessionIndex >= sessions.length)
+        if (sessions.count === 0 || sessionIndex < 0 || sessionIndex >= sessions.count)
             return "";
 
-        return sessions[sessionIndex].name;
+        return sessions.get(sessionIndex).name;
     }
 
     function getSessionComment() {
-        if (sessionIndex >= sessionsInitialized)
+        if (sessionIndex >= sessions.count)
             return "";
 
-        if (sessions.length === 0 || sessionIndex < 0 || sessionIndex >= sessions.length)
+        if (sessions.count === 0 || sessionIndex < 0 || sessionIndex >= sessions.count)
             return "";
 
-        return sessions[sessionIndex].comment;
+        return sessions.get(sessionIndex).comment;
     }
 
     Instantiator {
@@ -39,14 +38,13 @@ Item {
 
         delegate: QtObject {
             Component.onCompleted: {
-                sessionHandler.sessions.push({
+                // Add session to ListModel
+                sessions.append({
                     "name": model.name,
                     "comment": model.comment
                 });
-                sessionHandler.sessionsInitialized = sessionHandler.sessions.length;
             }
         }
-
     }
 
 }
