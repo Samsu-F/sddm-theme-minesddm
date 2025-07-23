@@ -4,19 +4,11 @@ import QtQuick.Controls 2.15
 TextField {
     // to prevent running into potentially big problems if the user sets config.passwordMode to an invalid value, we sanitize it here
     readonly property string passwordMode: (function(mode) {
-        switch (mode) {
-        case "plain":
-        case "noEcho":
-            // treat it like plain here. The desired effect is achieved by setting the echoMode (see above).
-            return "plain";
-        case "fixedMask":
-        case "randomMask":
-        case "jitterMask":
-            return mode;
-        default:
-            showError("Config error: Invalid passwordMode '" + mode + "'");
-            return "plain"; // save fallback
-        }
+        const validModes = ["plain", "fixedMask", "randomMask", "jitterMask"];
+        if (mode === "noEcho") return "plain";
+        if (validModes.includes(mode)) return mode;
+        showError("Config error: Invalid passwordMode '" + mode + "'");
+        return "plain";
     })(config.passwordMode)
     readonly property int maskCharsPerTypedChar: (function(n) {
         if (passwordMode === "plain") {
@@ -42,11 +34,8 @@ TextField {
     // wrapper function that calls the appropriate function based on the passwordMode
     function getMask(plainInput) {
         let outputLength = plainInput.length * maskCharsPerTypedChar;
-        if (passwordMode === "fixedMask") {
-            return getFixedMask(outputLength);
-        } else if (["randomMask", "jitterMask"].includes(passwordMode)) {
-            return getRandomMask(outputLength);
-        }
+        if (passwordMode === "fixedMask") return getFixedMask(outputLength);
+        if (["randomMask", "jitterMask"].includes(passwordMode)) return getRandomMask(outputLength);
         showError("ERROR: Masking failed for passwordMode '" + passwordMode + "'"); // this line should never be reached
         return plainInput;
     }
