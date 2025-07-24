@@ -62,7 +62,7 @@ TextField {
             randomMaskString += randomMaskChar();
         }
 
-        // dicard deleted tail so it will be newly generated if chars are added again
+        // discard deleted tail so it will be newly generated if chars are added again
         randomMaskString = randomMaskString.substring(0, outputLength);
         return randomMaskString;
     }
