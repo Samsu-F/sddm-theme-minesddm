@@ -80,12 +80,12 @@ QtObject {
     }
 
     function _substitute(str) {
-        let indexQustionmark = _findFirstUnescaped(str, '?');
-        if (indexQustionmark !== -1) {
+        let indexQuestionMark = _findFirstUnescaped(str, '?');
+        if (indexQuestionMark !== -1) {
             let indexColon = _findFirstUnescaped(str, ':');
-            if (indexQustionmark > 1) {
+            if (indexQuestionMark > 1) {
                 // '{' is at index 0
-                return str.substring(indexQustionmark + 1, indexColon);
+                return str.substring(indexQuestionMark + 1, indexColon);
             }
 
             else {

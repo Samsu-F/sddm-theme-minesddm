@@ -1,4 +1,4 @@
-// This is a huge workaround to just to get the name of the sessions
+// This is a huge workaround just to get the name of the sessions
 // For some reason sessionModel.get is not working so I came up with this:
 // This will store the values of sessionModel in a list for later use
 

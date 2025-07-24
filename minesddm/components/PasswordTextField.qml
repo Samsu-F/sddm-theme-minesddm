@@ -5,7 +5,9 @@ TextField {
     // to prevent running into potentially big problems if the user sets config.passwordMode to an invalid value, we sanitize it here
     readonly property string passwordMode: (function(mode) {
         const validModes = ["plain", "fixedMask", "randomMask", "jitterMask"];
-        if (mode === "noEcho") return "plain";
+        // The expected effect for the "noEcho" mode is achieved by setting the `passwordMode` to "plain"
+        // and the `echoMode` property of PasswordTextField to `TextInput.NoEcho`.
+        if (mode === "noEcho") return "plain"; 
         if (validModes.includes(mode)) return mode;
         showError("Config error: Invalid passwordMode '" + mode + "'");
         return "plain";
@@ -61,8 +63,7 @@ TextField {
         while (randomMaskString.length < outputLength) {
             randomMaskString += randomMaskChar();
         }
-
-        // dicard deleted tail so it will be newly generated if chars are added again
+        // discard deleted tail so it will be newly generated if chars are added again
         randomMaskString = randomMaskString.substring(0, outputLength);
         return randomMaskString;
     }
@@ -84,6 +85,7 @@ TextField {
         cursorMonitor.lock = false;
     }
 
+    // Note that `config.passwordMode` can be "noEcho", but `PasswordTextField.passwordMode` cannot.
     echoMode: config.passwordMode === "noEcho" ? TextInput.NoEcho : TextInput.Normal
     width: config.inputWidth
     height: config.itemHeight
