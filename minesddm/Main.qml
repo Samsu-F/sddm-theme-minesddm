@@ -44,7 +44,7 @@ Rectangle {
     }
 
     height: config.screenHeight || Screen.height
-    width: config.screenWidth || Screen.ScreenWidth
+    width: config.screenWidth || Screen.width
 
     SessionHandler {
         id: sessionHandler
