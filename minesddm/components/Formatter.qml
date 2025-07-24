@@ -1,8 +1,7 @@
 import QtQuick 2.15
 
 QtObject {
-
-    readonly property var escapeCharacter: '%' // also change the explanation in config file accordingly, if you change this
+    readonly property string escapeCharacter: "%" // also change the explanation in config file accordingly, if you change this
     required property var placeholderMap
 
     function formatString(str) {

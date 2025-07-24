@@ -2,18 +2,45 @@ import QtQuick 2.15
 import QtQuick.Controls 2.15
 
 TextField {
+    // Password mode enumeration
+    enum PasswordMode {
+        Plain = 0,
+        FixedMask = 1,
+        RandomMask = 2,
+        JitterMask = 3,
+        NoEcho = 4
+    }
+    
+    // Password field fallback constants
+    readonly property string fallbackPasswordFixedMaskString: "*"
+    readonly property string fallbackPasswordRandomMaskChars: "1234567890"
+    readonly property int fallbackMaskCharsPerTypedChar: 1
+    readonly property int fallbackPasswordMode: PasswordTextField.PasswordMode.Plain
+    
+    // Password mode string to enum mapping
+    function getPasswordModeFromString(modeString) {
+        switch(modeString) {
+            case "plain": return PasswordTextField.PasswordMode.Plain;
+            case "fixedMask": return PasswordTextField.PasswordMode.FixedMask;
+            case "randomMask": return PasswordTextField.PasswordMode.RandomMask;
+            case "jitterMask": return PasswordTextField.PasswordMode.JitterMask;
+            case "noEcho": return PasswordTextField.PasswordMode.NoEcho;
+            default: return -1; // Invalid mode
+        }
+    }
+    
     // to prevent running into potentially big problems if the user sets config.passwordMode to an invalid value, we sanitize it here
-    readonly property string passwordMode: (function(mode) {
-        const validModes = ["plain", "fixedMask", "randomMask", "jitterMask"];
-        // The expected effect for the "noEcho" mode is achieved by setting the `passwordMode` to "plain"
-        // and the `echoMode` property of PasswordTextField to `TextInput.NoEcho`.
-        if (mode === "noEcho") return "plain"; 
-        if (validModes.includes(mode)) return mode;
+    readonly property int passwordMode: (function(mode) {
+        let enumMode = getPasswordModeFromString(mode);
+        if (enumMode !== -1) {
+            return enumMode;
+        }
         showError("Config error: Invalid passwordMode '" + mode + "'");
-        return "plain";
+        return fallbackPasswordMode;
     })(config.passwordMode)
+    
     readonly property int maskCharsPerTypedChar: (function(n) {
-        if (passwordMode === "plain") {
+        if (passwordMode === PasswordTextField.PasswordMode.Plain) {
             return 1;
         }
 
@@ -22,7 +49,7 @@ TextField {
         }
         
         showError("Config error: Invalid maskCharsPerTypedChar '" + n + "'");
-        return 1; // fallback if undefined or 0
+        return fallbackMaskCharsPerTypedChar;
     })(config.maskCharsPerTypedChar)
     property string actualPasswordEntered: ""
     property bool ignoreChange: false // safety switch to prevent unwanted recursion
@@ -30,14 +57,14 @@ TextField {
     property string randomMaskString: ""
 
     function getPassword() {
-        return passwordMode === "plain" ? text : actualPasswordEntered;
+        return passwordMode === PasswordTextField.PasswordMode.Plain ? text : actualPasswordEntered;
     }
 
     // wrapper function that calls the appropriate function based on the passwordMode
     function getMask(plainInput) {
         let outputLength = plainInput.length * maskCharsPerTypedChar;
-        if (passwordMode === "fixedMask") return getFixedMask(outputLength);
-        if (["randomMask", "jitterMask"].includes(passwordMode)) return getRandomMask(outputLength);
+        if (passwordMode === PasswordTextField.PasswordMode.FixedMask) return getFixedMask(outputLength);
+        if (passwordMode === PasswordTextField.PasswordMode.RandomMask || passwordMode === PasswordTextField.PasswordMode.JitterMask) return getRandomMask(outputLength);
         showError("ERROR: Masking failed for passwordMode '" + passwordMode + "'"); // this line should never be reached
         return plainInput;
     }
@@ -46,7 +73,7 @@ TextField {
         let maskPattern = config.passwordFixedMaskString;
         if (maskPattern === "" || maskPattern === undefined) {
             showError("Config error: Invalid passwordFixedMaskString '" + maskPattern + "'");
-            maskPattern = "*"; // fallback
+            maskPattern = fallbackPasswordFixedMaskString;
         }
         let result = "";
         for (let i = 0; i < outputLength; ++i) {
@@ -56,7 +83,7 @@ TextField {
     }
 
     function getRandomMask(outputLength) {
-        if (passwordMode === "jitterMask") {
+        if (passwordMode === PasswordTextField.PasswordMode.JitterMask) {
             randomMaskString = "";
         }
 
@@ -72,7 +99,7 @@ TextField {
         let charSet = config.passwordRandomMaskChars;
         if (charSet === "" || charSet === undefined) {
             showError("Config error: Invalid passwordRandomMaskChars '" + charSet + "'");
-            charSet = "1234567890"; // fallback
+            charSet = fallbackPasswordRandomMaskChars;
         }
         const index = Math.floor(Math.random() * charSet.length);
         return charSet.charAt(index);
@@ -86,7 +113,8 @@ TextField {
     }
 
     // Note that `config.passwordMode` can be "noEcho", but `PasswordTextField.passwordMode` cannot.
-    echoMode: config.passwordMode === "noEcho" ? TextInput.NoEcho : TextInput.Normal
+    echoMode: passwordMode === PasswordTextField.PasswordMode.NoEcho ? TextInput.NoEcho : TextInput.Normal
+    
     width: config.inputWidth
     height: config.itemHeight
     color: config.lightText
@@ -96,7 +124,7 @@ TextField {
         cursorMonitor.lock = true;
         let prevTextLength = textLength;
         textLength = text.length;
-        if (passwordMode !== "plain" && !ignoreChange) {
+        if (passwordMode !== PasswordTextField.PasswordMode.Plain && !ignoreChange) {
             let simCursorPos = Math.floor(cursorPosition / maskCharsPerTypedChar); // simulated cursor position of the imaginary cursor in actualPasswordEntered
             if (text.length > prevTextLength) {
                 // addition
@@ -139,7 +167,7 @@ TextField {
         property bool lock: false
 
         interval: 10
-        running: passwordMode !== "plain" && maskCharsPerTypedChar > 1
+        running: passwordMode !== PasswordTextField.PasswordMode.Plain && maskCharsPerTypedChar > 1
         repeat: true
         onTriggered: {
             const selectionActive = selectionStart !== selectionEnd;
