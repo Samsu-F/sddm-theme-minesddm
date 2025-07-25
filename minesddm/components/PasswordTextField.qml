@@ -201,7 +201,8 @@ TextField {
         property bool lock: false
 
         onTriggered: {
-            if (!lock) {
+            const selectionActive = selectionStart !== selectionEnd;
+            if (!lock && !selectionActive) {
                 let maskedPassword = getMask(actualPasswordEntered);
                 let prevCursorPosition = cursorPosition;
                 ignoreChange = true;
