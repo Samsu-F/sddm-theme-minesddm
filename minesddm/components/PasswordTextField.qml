@@ -40,7 +40,7 @@ TextField {
     })(config.passwordMode)
     
     readonly property int maskCharsPerTypedChar: (function(n) {
-        if (passwordMode === PasswordTextField.PasswordMode.Plain) {
+        if (passwordMode === PasswordTextField.PasswordMode.Plain || passwordMode === PasswordTextField.PasswordMode.NoEcho) {
             return 1;
         }
 
@@ -57,7 +57,7 @@ TextField {
     property string randomMaskString: ""
 
     function getPassword() {
-        return passwordMode === PasswordTextField.PasswordMode.Plain ? text : actualPasswordEntered;
+        return passwordMode === PasswordTextField.PasswordMode.Plain || passwordMode === PasswordTextField.PasswordMode.NoEcho ? text : actualPasswordEntered;
     }
 
     // wrapper function that calls the appropriate function based on the passwordMode
@@ -112,7 +112,6 @@ TextField {
         cursorMonitor.lock = false;
     }
 
-    // Note that `config.passwordMode` can be "noEcho", but `PasswordTextField.passwordMode` cannot.
     echoMode: passwordMode === PasswordTextField.PasswordMode.NoEcho ? TextInput.NoEcho : TextInput.Normal
     
     width: config.inputWidth
@@ -124,7 +123,7 @@ TextField {
         cursorMonitor.lock = true;
         let prevTextLength = textLength;
         textLength = text.length;
-        if (passwordMode !== PasswordTextField.PasswordMode.Plain && !ignoreChange) {
+        if (passwordMode !== PasswordTextField.PasswordMode.Plain && passwordMode !== PasswordTextField.PasswordMode.NoEcho && !ignoreChange) {
             let simCursorPos = Math.floor(cursorPosition / maskCharsPerTypedChar); // simulated cursor position of the imaginary cursor in actualPasswordEntered
             if (text.length > prevTextLength) {
                 // addition
@@ -167,7 +166,7 @@ TextField {
         property bool lock: false
 
         interval: 10
-        running: passwordMode !== PasswordTextField.PasswordMode.Plain && maskCharsPerTypedChar > 1
+        running: passwordMode !== PasswordTextField.PasswordMode.Plain && passwordMode !== PasswordTextField.PasswordMode.NoEcho && maskCharsPerTypedChar > 1
         repeat: true
         onTriggered: {
             const selectionActive = selectionStart !== selectionEnd;
