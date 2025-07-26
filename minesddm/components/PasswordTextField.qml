@@ -17,6 +17,7 @@ TextField {
     readonly property string fallbackPasswordRandomMaskChars: "1234567890"
     readonly property int fallbackMaskCharsPerTypedChar: 1
     readonly property int fallbackPasswordMode: PasswordTextField.PasswordMode.Plain
+    readonly property double fallbackGlitchFrequency: 2.5
     
     // Password mode string to enum mapping
     function getPasswordModeFromString(modeString) {
@@ -90,7 +91,7 @@ TextField {
     }
 
     function getRandomMask(outputLength) {
-        if (passwordMode === PasswordTextField.PasswordMode.JitterMask || passwordMode === PasswordTextField.PasswordMode.GlitchMask) {
+        if (passwordMode === PasswordTextField.PasswordMode.JitterMask) {
             randomMaskString = "";
         }
 
@@ -112,11 +113,24 @@ TextField {
         return charSet.charAt(index);
     }
 
+    // This function must only be used if it is known that the cursor is supposed to be at pos,
+    // i.e., it overrides any user-made cursor updates since the last time cursorMonitor ran.
     function setCursorPosition(pos) {
         cursorMonitor.lock = true;
         cursorMonitor.prevCursorPosition = pos;
         cursorPosition = pos;
         cursorMonitor.lock = false;
+    }
+
+    function glitchMaskUpdate(mask, p) {
+        for (let i = 0; i < mask.length; ++i) {
+            if (Math.random() < p) {
+                const newChar = randomMaskChar();
+                mask = mask.substring(0, i) + newChar + mask.substring(i + 1);
+            }
+        }
+        randomMaskString = mask;
+        return mask;
     }
 
     echoMode: passwordMode === PasswordTextField.PasswordMode.NoEcho ? TextInput.NoEcho : TextInput.Normal
@@ -127,7 +141,7 @@ TextField {
     placeholderTextColor: config.darkText
     leftPadding: config.inputLeftPadding
     onTextChanged: {
-        glitchMaskTimer.lock = true;
+        maskGlitcher.lock = true;
         cursorMonitor.lock = true;
         let prevTextLength = textLength;
         textLength = text.length;
@@ -159,7 +173,7 @@ TextField {
             ignoreChange = false;
             setCursorPosition(simCursorPos * maskCharsPerTypedChar);
         }
-        glitchMaskTimer.lock = false;
+        maskGlitcher.lock = false;
         cursorMonitor.lock = false;
     }
 
@@ -194,21 +208,35 @@ TextField {
     }
 
     Timer {
-        id: glitchMaskTimer
+        id: maskGlitcher
         interval: 10
         running: passwordMode === PasswordTextField.PasswordMode.GlitchMask && text.length > 0
         repeat: true
         property bool lock: false
+        property double probability: (function() {
+            const p = Number(config.glitchFrequency);
+            if (typeof p === 'number' && isFinite(p) && p >= 0.0) {
+                return p;
+            }
+            if(passwordMode === PasswordTextField.PasswordMode.GlitchMask) {
+                showError("Config error: Invalid glitchFrequency '" + config.glitchFrequency + "'");
+            }
+            return fallbackGlitchFrequency;
+        })() * (interval / 1000)
 
         onTriggered: {
             const selectionActive = selectionStart !== selectionEnd;
             if (!lock && !selectionActive) {
-                let maskedPassword = getMask(actualPasswordEntered);
-                let prevCursorPosition = cursorPosition;
+                const newMask = glitchMaskUpdate(text, maskGlitcher.probability);
+                const prevCursorPosition = cursorPosition;
+
                 ignoreChange = true;
-                text = maskedPassword;
+                cursorMonitor.lock = true;
+                text = newMask;
+                // we deliberately do NOT use setCursorPosition here, as that would override cursor movements by the user.
+                cursorPosition = prevCursorPosition;
                 ignoreChange = false;
-                setCursorPosition(prevCursorPosition);
+                cursorMonitor.lock = false;
             }
         }
     }
